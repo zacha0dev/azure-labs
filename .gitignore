@@ -1,0 +1,76 @@
+# -----------------------------
+# Azure Labs repo (.gitignore)
+# -----------------------------
+
+# --- Repo-local secrets / config ---
+.data/
+!.data/.keep
+!.data/subs.example.json
+
+# In case someone places local configs elsewhere
+**/subs.json
+**/*secrets*.json
+**/*secret*.json
+**/*.secrets.*
+**/*.local.*
+.env
+.env.*
+!.env.example
+
+# --- Azure CLI / PowerShell auth caches (DO NOT COMMIT) ---
+.azure/
+az*.json
+*.msalcache*
+*.tokencache*
+TokenCache.dat
+ServicePrincipal.json
+
+# --- Outputs / build artifacts ---
+**/out/
+**/bin/
+**/obj/
+**/*.zip
+**/*.tar
+**/*.tgz
+**/*.bak
+**/*.tmp
+**/*.temp
+**/*.log
+**/*.trace
+**/*.sarif
+reports/
+artifacts/
+dist/
+
+# --- Bicep / ARM compiled outputs ---
+**/*.bicep.json
+**/*.arm.json
+**/*.generated.json
+**/what-if*.json
+
+# --- IaC state files (avoid accidents) ---
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.tfvars
+
+# --- Editor / OS ---
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- PowerShell ---
+*.ps1xml.user
+
+# --- Logs ---
+logs/
+!logs/.keep
+logs/*.log
+logs/*.txt
