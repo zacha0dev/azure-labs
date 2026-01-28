@@ -39,12 +39,13 @@ $awsProfile = Require-ConfigField $aws "profile" "aws"
 $awsRegion = Require-ConfigField $aws "region" "aws"
 
 Require-Command az
-Require-AwsCli
+Ensure-AwsCli
 Require-AwsProfile -Profile $awsProfile
 $awsRegion = Require-AwsRegion -Region $awsRegion
+Ensure-AwsAuth -Profile $awsProfile -DoLogin
 
-az account show 1>$null 2>$null
-if ($LASTEXITCODE -ne 0) { throw "Azure CLI not authenticated. Run: az login" }
+az account get-access-token 1>$null 2>$null
+if ($LASTEXITCODE -ne 0) { throw "Azure CLI token expired or missing. Run: az login" }
 & az account set --subscription $subscriptionId | Out-Null
 
 Write-Host "Azure VPN gateway connections" -ForegroundColor Cyan
