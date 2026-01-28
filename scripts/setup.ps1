@@ -28,6 +28,28 @@ Clear-Host
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $PkgSetup = Join-Path $RepoRoot ".packages\setup.ps1"
 $AwsPreflight = Join-Path $RepoRoot "scripts\aws\setup-aws.ps1"
+$DataDir = Join-Path $RepoRoot ".data"
+
+# --- Ensure .data config files from templates ---
+function Ensure-ConfigFromTemplate([string]$TargetPath, [string]$TemplatePath) {
+  if (Test-Path $TargetPath) { return }
+  if (-not (Test-Path $TemplatePath)) { return }
+
+  $dir = Split-Path -Parent $TargetPath
+  if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+
+  Copy-Item -Path $TemplatePath -Destination $TargetPath
+  Write-Host "[CONFIG] Created $TargetPath from template." -ForegroundColor Yellow
+  Write-Host "         Edit this file with your real values, then re-run setup." -ForegroundColor Yellow
+}
+
+Ensure-ConfigFromTemplate `
+  (Join-Path $DataDir "subs.json") `
+  (Join-Path $DataDir "subs.example.json")
+
+Ensure-ConfigFromTemplate `
+  (Join-Path $DataDir "lab-003" "config.json") `
+  (Join-Path $DataDir "lab-003" "config.template.json")
 
 # --- Azure tooling ---
 if (-not (Test-Path $PkgSetup)) {

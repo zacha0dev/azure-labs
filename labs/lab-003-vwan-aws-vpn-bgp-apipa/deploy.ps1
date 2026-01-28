@@ -48,7 +48,16 @@ function Ensure-Directory([string]$Path) {
 }
 
 if (-not (Test-Path $ConfigPath)) {
-  throw "Missing config: $ConfigPath. Copy and edit it before running this lab."
+  $templatePath = Join-Path $RepoRoot ".data\lab-003\config.template.json"
+  if (Test-Path $templatePath) {
+    $dir = Split-Path -Parent $ConfigPath
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+    Copy-Item -Path $templatePath -Destination $ConfigPath
+    Write-Host "Created $ConfigPath from template." -ForegroundColor Yellow
+    Write-Host "Edit subscriptionId, adminPassword, and AWS profile, then re-run." -ForegroundColor Yellow
+    exit 1
+  }
+  throw "Missing config: $ConfigPath. Copy .data/lab-003/config.template.json and edit it."
 }
 
 $cfg = Get-Content $ConfigPath -Raw | ConvertFrom-Json

@@ -8,7 +8,9 @@
 ## Prerequisites
 - Azure CLI (`az`) and authenticated login.
 - AWS CLI configured (named profile recommended).
-- Update `.data/lab-003/config.json` with your subscription, region, and naming.
+- Run `.\scripts\setup.ps1 -DoLogin` to install tooling and authenticate both clouds.
+- Config is auto-created from `.data/lab-003/config.template.json` on first run.
+  Edit `.data/lab-003/config.json` with your subscription ID, admin password, and AWS profile.
 
 ## Cost Warning
 This lab deploys billable Azure and AWS resources (vWAN, VPN gateway, VMs, and VPN connections). Review costs before proceeding and tear down promptly.
