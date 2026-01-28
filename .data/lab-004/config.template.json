@@ -1,9 +1,0 @@
-{
-  "azure": {
-    "subscriptionId": "YOUR_SUBSCRIPTION_ID",
-    "location": "eastus2",
-    "resourceGroup": "rg-lab-004-vwan-route-prop",
-    "adminUsername": "azureuser",
-    "adminPassword": "CHANGE_ME"
-  }
-}

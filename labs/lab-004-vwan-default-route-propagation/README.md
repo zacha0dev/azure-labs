@@ -52,14 +52,13 @@ rt-fw-default  Default RT        Default RT    Default RT
 
 ## Prerequisites
 
-- Azure CLI (`az`) installed
-- Active Azure subscription
+- Run `scripts\setup.ps1` first (sets up Azure CLI + subscription in `.data/subs.json`)
 - PowerShell 5.1+ or PowerShell Core
 
 ## Quick Start
 
 ```powershell
-# 1. Deploy infrastructure (takes 30-45 min for vWAN)
+# 1. Deploy infrastructure (30-45 min for vWAN)
 .\scripts\deploy.ps1
 
 # 2. Validate route propagation
@@ -69,21 +68,7 @@ rt-fw-default  Default RT        Default RT    Default RT
 .\scripts\destroy.ps1
 ```
 
-## Configuration
-
-Edit `.data/lab-004/config.json`:
-
-```json
-{
-  "azure": {
-    "subscriptionId": "your-subscription-id",
-    "location": "eastus2",
-    "resourceGroup": "rg-lab-004-vwan-route-prop",
-    "adminUsername": "azureuser",
-    "adminPassword": "your-secure-password"
-  }
-}
-```
+Uses subscription from `.data/subs.json` (lab by default). VM password is hardcoded for lab simplicity.
 
 ## Cost Estimate
 
