@@ -3,8 +3,7 @@
 
 [CmdletBinding()]
 param(
-  [ValidateSet("lab","prod")]
-  [string]$SubscriptionKey = "lab",
+  [string]$SubscriptionKey,
   [string]$AwsProfile = "aws-labs",
   [string]$AwsRegion = "us-east-2",
   [string]$Location = "eastus2",

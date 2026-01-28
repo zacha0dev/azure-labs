@@ -77,18 +77,34 @@ This will:
 
 ## Using Different Subscriptions
 
-Lab scripts accept a `-SubscriptionKey` parameter:
+Lab scripts accept a `-SubscriptionKey` parameter. You can use **any key name** that exists in your `subs.json`:
 
 ```powershell
-# Use the "lab" subscription (default)
+# Use the default subscription (from "default" field in subs.json)
 .\scripts\deploy.ps1
 
-# Use a different subscription
+# Use a specific subscription key
+.\scripts\deploy.ps1 -SubscriptionKey sub01
 .\scripts\deploy.ps1 -SubscriptionKey prod
-
-# Use a custom key (must exist in subs.json)
 .\scripts\deploy.ps1 -SubscriptionKey mydev
 ```
+
+### Custom Subscription Keys
+
+You can use any key names you want in `subs.json`. Common patterns:
+
+```json
+{
+  "subscriptions": {
+    "sub01": { "id": "...", "name": "Dev Subscription" },
+    "sub02": { "id": "...", "name": "Test Subscription" },
+    "prod": { "id": "...", "name": "Production" }
+  },
+  "default": "sub01"
+}
+```
+
+The scripts will accept any key that exists in the `subscriptions` object.
 
 ## Common Errors
 

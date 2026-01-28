@@ -3,8 +3,7 @@
 
 [CmdletBinding()]
 param(
-  [ValidateSet("lab","prod")]
-  [string]$SubscriptionKey = "lab"
+  [string]$SubscriptionKey
 )
 
 Set-StrictMode -Version Latest
