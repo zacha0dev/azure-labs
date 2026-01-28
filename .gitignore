@@ -7,7 +7,10 @@
 !.data/.keep
 !.data/subs.example.json
 !.data/accounts.aws.template.json
-!.data/lab-003/config.json
+!.data/accounts.azure.template.json
+!.data/lab-003/
+.data/lab-003/*
+!.data/lab-003/config.template.json
 
 # In case someone places local configs elsewhere
 **/subs.json
@@ -16,11 +19,21 @@
 **/*.secrets.*
 **/*.local.*
 .data/accounts.aws.json
-.data/lab-003/outputs.json
+.data/accounts.azure.json
 .data/**/outputs.json
 .env
 .env.*
 !.env.example
+
+# --- Private keys / certs (never commit) ---
+**/*.pem
+**/*.pfx
+**/*.key
+**/*.p12
+**/id_rsa*
+**/id_ed25519*
+**/*.kubeconfig
+**/azureProfile.json
 
 # --- Azure CLI / PowerShell auth caches (DO NOT COMMIT) ---
 .azure/
@@ -60,6 +73,7 @@ dist/
 .terraform/
 terraform.tfvars
 *.tfvars
+**/*state*.json
 
 # --- AWS credentials / local config ---
 **/.aws/
@@ -85,7 +99,5 @@ logs/
 !logs/.keep
 logs/*.log
 logs/*.txt
-
-
 
 labs/**/lab.config.json
