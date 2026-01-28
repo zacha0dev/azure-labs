@@ -3,8 +3,7 @@
 
 [CmdletBinding()]
 param(
-  [ValidateSet("lab","prod")]
-  [string]$SubscriptionKey = "lab",
+  [string]$SubscriptionKey,
   [string]$Location = "eastus2",
   [switch]$Force
 )

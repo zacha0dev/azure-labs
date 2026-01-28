@@ -96,13 +96,13 @@ function Get-SubscriptionId {
     Gets a subscription ID from config with defensive error handling.
   .PARAMETER Key
     The subscription key to look up (e.g., "lab", "prod", or custom key).
+    If not provided, uses the default from config.
   .PARAMETER Config
     Optional pre-loaded config object. If not provided, loads from default path.
   .PARAMETER RepoRoot
     Repository root path. Defaults to auto-detected.
   #>
   param(
-    [Parameter(Mandatory = $true)]
     [string]$Key,
     [PSCustomObject]$Config,
     [string]$RepoRoot
@@ -113,21 +113,35 @@ function Get-SubscriptionId {
 
   $subsPath = Join-Path $RepoRoot ".data\subs.json"
 
-  # Get available subscription keys
+  # If no key provided, use default from config
+  if (-not $Key) {
+    if ($Config.default) {
+      $Key = $Config.default
+      Write-Host "  Using default subscription: $Key" -ForegroundColor DarkGray
+    } else {
+      # No default configured, try to find first available key
+      $availableKeys = @()
+      if ($Config.subscriptions -and $Config.subscriptions.PSObject.Properties) {
+        $availableKeys = @($Config.subscriptions.PSObject.Properties | ForEach-Object { $_.Name })
+      }
+      if ($availableKeys.Count -gt 0) {
+        $Key = $availableKeys[0]
+        Write-Host "  No default configured, using: $Key" -ForegroundColor DarkGray
+      } else {
+        Write-Host ""
+        Write-Host "No subscriptions configured in: $subsPath" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Run setup to add a subscription:" -ForegroundColor Yellow
+        Write-Host "  .\scripts\setup.ps1 -DoLogin" -ForegroundColor Cyan
+        throw "No subscriptions configured. Run scripts\setup.ps1 first."
+      }
+    }
+  }
+
+  # Get available subscription keys (for validation below)
   $availableKeys = @()
   if ($Config.subscriptions -and $Config.subscriptions.PSObject.Properties) {
     $availableKeys = @($Config.subscriptions.PSObject.Properties | ForEach-Object { $_.Name })
-  }
-
-  if ($availableKeys.Count -eq 0) {
-    Write-Host ""
-    Write-Host "No subscriptions configured in: $subsPath" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Run setup to add a subscription:" -ForegroundColor Yellow
-    Write-Host "  .\scripts\setup.ps1 -DoLogin" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "See: docs/labs-config.md" -ForegroundColor DarkGray
-    throw "No subscriptions configured. Run scripts\setup.ps1 first."
   }
 
   # Check if requested key exists
