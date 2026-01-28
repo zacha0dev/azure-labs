@@ -85,13 +85,15 @@ if (-not $aws.apipaPairs -or $aws.apipaPairs.Count -lt 4) {
 }
 
 Require-Command az
-Require-AwsCli
+Ensure-AwsCli
 Require-AwsProfile -Profile $awsProfile
 $awsRegion = Require-AwsRegion -Region $awsRegion
+Ensure-AwsAuth -Profile $awsProfile -DoLogin
 Confirm-AwsBudgetWarning -Force:$Force
 
-az account show 1>$null 2>$null
-if ($LASTEXITCODE -ne 0) { throw "Azure CLI not authenticated. Run: az login" }
+# Validate Azure auth — get-access-token catches stale sessions that az account show misses
+az account get-access-token 1>$null 2>$null
+if ($LASTEXITCODE -ne 0) { throw "Azure CLI token expired or missing. Run: az login" }
 Invoke-Az "account set --subscription $subscriptionId"
 
 Write-Host "";
