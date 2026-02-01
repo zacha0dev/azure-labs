@@ -325,6 +325,10 @@ $vpnConnName = "conn-$vpnSiteName"
 # Get vWAN ID for reference
 $vwanId = az network vwan show -g $ResourceGroup -n $vwanName --query id -o tsv
 
+# Temp directory for ARM REST API body files
+$tempDir = Join-Path $RepoRoot ".data\lab-003"
+if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }
+
 # Check if site exists and has proper links
 $existingSite = az network vpn-site show -g $ResourceGroup -n $vpnSiteName -o json 2>$null | ConvertFrom-Json
 $hasValidLinks = $false
@@ -401,7 +405,7 @@ if (-not $hasValidLinks) {
   $vpnSiteUri = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Network/vpnSites/$vpnSiteName`?api-version=2023-09-01"
 
   # Write body to temp file (az rest on Windows needs file input for JSON)
-  $vpnSiteTempFile = Join-Path $dataDir "vpnsite-body.json"
+  $vpnSiteTempFile = Join-Path $tempDir "vpnsite-body.json"
   $vpnSiteBody | Out-File -FilePath $vpnSiteTempFile -Encoding utf8
 
   az rest --method PUT --uri $vpnSiteUri --body "@$vpnSiteTempFile" --output none
@@ -476,7 +480,7 @@ if (-not $existingConn) {
   $vpnConnUri = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Network/vpnGateways/$vpnGwName/vpnConnections/$vpnConnName`?api-version=2023-09-01"
 
   # Write body to temp file (az rest on Windows needs file input for JSON)
-  $vpnConnTempFile = Join-Path $dataDir "vpnconn-body.json"
+  $vpnConnTempFile = Join-Path $tempDir "vpnconn-body.json"
   $vpnConnBody | Out-File -FilePath $vpnConnTempFile -Encoding utf8
 
   az rest --method PUT --uri $vpnConnUri --body "@$vpnConnTempFile" --output none
