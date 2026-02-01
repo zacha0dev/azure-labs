@@ -400,7 +400,11 @@ if (-not $hasValidLinks) {
 
   $vpnSiteUri = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Network/vpnSites/$vpnSiteName`?api-version=2023-09-01"
 
-  az rest --method PUT --uri $vpnSiteUri --body $vpnSiteBody --output none
+  # Write body to temp file (az rest on Windows needs file input for JSON)
+  $vpnSiteTempFile = Join-Path $dataDir "vpnsite-body.json"
+  $vpnSiteBody | Out-File -FilePath $vpnSiteTempFile -Encoding utf8
+
+  az rest --method PUT --uri $vpnSiteUri --body "@$vpnSiteTempFile" --output none
   if ($LASTEXITCODE -ne 0) { throw "VPN Site creation failed." }
 
   Write-Host "  VPN Site created with 2 links" -ForegroundColor Green
@@ -471,7 +475,11 @@ if (-not $existingConn) {
 
   $vpnConnUri = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Network/vpnGateways/$vpnGwName/vpnConnections/$vpnConnName`?api-version=2023-09-01"
 
-  az rest --method PUT --uri $vpnConnUri --body $vpnConnBody --output none
+  # Write body to temp file (az rest on Windows needs file input for JSON)
+  $vpnConnTempFile = Join-Path $dataDir "vpnconn-body.json"
+  $vpnConnBody | Out-File -FilePath $vpnConnTempFile -Encoding utf8
+
+  az rest --method PUT --uri $vpnConnUri --body "@$vpnConnTempFile" --output none
   if ($LASTEXITCODE -ne 0) {
     Write-Host "  Warning: VPN connection creation may have failed" -ForegroundColor Yellow
   } else {
