@@ -108,3 +108,10 @@ labs/**/*-vpn-dump/
 labs/**/*-dump/
 labs/**/*-evidence*.json
 labs/**/*-output*.json
+
+# Lab evidence / dumps
+**/lab-*-vpn-dump/**
+**/lab-*-azure-evidence.json
+**/*evidence*.json
+**/*dump*.json
+
