@@ -258,14 +258,20 @@ function Setup-Aws {
   # Check CLI
   $awsCli = Test-AwsCli
   if (-not $awsCli.ok) {
-    Write-Host "  AWS CLI not found. Installing..." -ForegroundColor Yellow
+    Write-Host "  AWS CLI not found." -ForegroundColor Yellow
     if (HasCmd "winget") {
-      winget install --exact --id Amazon.AWSCLI --accept-package-agreements --accept-source-agreements
+      $install = Read-Host "  Install AWS CLI now? (y/n)"
+      if ($install.Trim().ToLower() -eq "y") {
+        Write-Host "  Installing AWS CLI..." -ForegroundColor Yellow
+        winget install --exact --id Amazon.AWSCLI --accept-package-agreements --accept-source-agreements
+        $awsCli = Test-AwsCli
+      }
     } else {
-      Write-Host "  Please install AWS CLI: https://aws.amazon.com/cli/" -ForegroundColor Red
-      return $false
+      Write-Host "  Install from: https://aws.amazon.com/cli/" -ForegroundColor Yellow
     }
-  } else {
+  }
+
+  if ($awsCli.ok) {
     Write-Host "  CLI: v$($awsCli.version)" -ForegroundColor Green
   }
 
@@ -274,12 +280,18 @@ function Setup-Aws {
   if (-not $tf.ok) {
     Write-Host "  Terraform not found." -ForegroundColor Yellow
     if (HasCmd "winget") {
-      Write-Host "  Installing Terraform..." -ForegroundColor Yellow
-      winget install --exact --id Hashicorp.Terraform --accept-package-agreements --accept-source-agreements
+      $install = Read-Host "  Install Terraform now? (y/n)"
+      if ($install.Trim().ToLower() -eq "y") {
+        Write-Host "  Installing Terraform..." -ForegroundColor Yellow
+        winget install --exact --id Hashicorp.Terraform --accept-package-agreements --accept-source-agreements
+        $tf = Test-Terraform
+      }
     } else {
-      Write-Host "  Please install Terraform: https://developer.hashicorp.com/terraform/downloads" -ForegroundColor Yellow
+      Write-Host "  Install from: https://developer.hashicorp.com/terraform/downloads" -ForegroundColor Yellow
     }
-  } else {
+  }
+
+  if ($tf.ok) {
     Write-Host "  Terraform: v$($tf.version)" -ForegroundColor Green
   }
 
@@ -289,24 +301,14 @@ function Setup-Aws {
     Write-Host ""
     Write-Host "  AWS profile '$AwsProfile' not authenticated." -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "  Options:" -ForegroundColor Cyan
-    Write-Host "    aws sso login --profile $AwsProfile     # SSO login (if configured)" -ForegroundColor Gray
-    Write-Host "    aws configure --profile $AwsProfile     # IAM access keys" -ForegroundColor Gray
-    Write-Host "    aws configure sso --profile $AwsProfile # Configure SSO" -ForegroundColor Gray
+    Write-Host "  To authenticate, run one of these in a separate terminal:" -ForegroundColor Cyan
+    Write-Host "    aws sso login --profile $AwsProfile     # If SSO is configured" -ForegroundColor Gray
+    Write-Host "    aws configure sso --profile $AwsProfile # To set up SSO" -ForegroundColor Gray
+    Write-Host "    aws configure --profile $AwsProfile     # For IAM access keys" -ForegroundColor Gray
     Write-Host ""
-
-    $choice = Read-Host "  Try SSO login now? (y/n)"
-    if ($choice.Trim().ToLower() -eq "y") {
-      Write-Host "  Running: aws sso login --profile $AwsProfile" -ForegroundColor Cyan
-      aws sso login --profile $AwsProfile
-      $awsAuth = Test-AwsAuth -Profile $AwsProfile
-    }
-  }
-
-  if ($awsAuth.ok) {
-    Write-Host "  Auth: account $($awsAuth.account)" -ForegroundColor Green
+    Write-Host "  After authenticating, run: .\setup.ps1 -Status" -ForegroundColor Yellow
   } else {
-    Write-Host "  Auth: not authenticated" -ForegroundColor Yellow
+    Write-Host "  Auth: account $($awsAuth.account)" -ForegroundColor Green
   }
 
   Write-Host ""
