@@ -12,42 +12,54 @@ A hands-on collection of Azure networking labs with Infrastructure-as-Code (Bice
 ## Quick Start
 
 ```powershell
-# Full setup (installs tooling, prompts for Azure + AWS login)
-.\scripts\setup.ps1 -DoLogin
+# 1. Environment setup (installs tooling, prompts for logins)
+.\setup.ps1
 
-# Check status
-.\run.ps1 status
+# 2. Check status anytime
+.\setup.ps1 -Status
 
-# Run a lab (example: Lab 003)
-cd labs/lab-003-vwan-aws-vpn-bgp-apipa
-.\scripts\deploy.ps1 -AdminPassword (Read-Host -AsSecureString "Password")
-.\scripts\validate.ps1
-.\scripts\destroy.ps1
+# 3. Deploy a lab
+.\labs\lab-003-vwan-aws-vpn-bgp-apipa\scripts\deploy.ps1 -AdminPassword "YourPassword123!"
+
+# 4. Validate
+.\labs\lab-003-vwan-aws-vpn-bgp-apipa\scripts\validate.ps1
+
+# 5. Cleanup
+.\labs\lab-003-vwan-aws-vpn-bgp-apipa\scripts\destroy.ps1
+```
+
+**Setup options:**
+```powershell
+.\setup.ps1            # Interactive - checks Azure + AWS, prompts for logins
+.\setup.ps1 -Azure     # Azure setup only
+.\setup.ps1 -Aws       # AWS setup only
+.\setup.ps1 -Status    # Quick status check (no prompts)
 ```
 
 For detailed setup instructions, see **[docs/setup-overview.md](docs/setup-overview.md)**.
 
 ## Configuration
 
-Labs use `.data/subs.json` for Azure subscription configuration:
+Azure subscriptions are configured in `.data/subs.json` (gitignored):
 
 ```json
 {
-  "default": "your-subscription-id",
-  "dev": "dev-subscription-id"
+  "default": "sub01",
+  "subscriptions": {
+    "sub01": { "id": "00000000-0000-0000-0000-000000000000", "name": "My Sub" }
+  }
 }
 ```
 
-Override with `-SubscriptionKey`:
+AWS uses the `aws-labs` profile. Configure with:
 ```powershell
-.\scripts\deploy.ps1 -SubscriptionKey dev -AdminPassword $pwd
+aws configure sso --profile aws-labs   # SSO (recommended)
+aws configure --profile aws-labs        # IAM keys
 ```
 
-See [docs/labs-config.md](docs/labs-config.md) for details.
+## AWS Setup (for hybrid labs)
 
-## AWS Setup (Optional)
-
-AWS integration is only required for hybrid labs (e.g., `lab-003`).
+AWS is only required for cross-cloud labs like `lab-003`. Run `.\setup.ps1 -Aws` or see:
 
 | Guide | Description |
 |-------|-------------|
@@ -55,21 +67,6 @@ AWS integration is only required for hybrid labs (e.g., `lab-003`).
 | [AWS Identity Center (SSO)](docs/aws-identity-center-sso.md) | Set up browser-based login |
 | [AWS CLI Profile Setup](docs/aws-cli-profile-setup.md) | Configure `aws-labs` profile |
 | [AWS Troubleshooting](docs/aws-troubleshooting.md) | Common errors and fixes |
-
-**Quick AWS setup:**
-```powershell
-# Install CLI
-winget install Amazon.AWSCLI
-
-# Configure SSO profile (recommended)
-aws configure sso --profile aws-labs
-
-# Login
-aws sso login --profile aws-labs
-
-# Verify
-aws sts get-caller-identity --profile aws-labs
-```
 
 ## Labs
 

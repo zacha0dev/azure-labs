@@ -13,15 +13,25 @@ This guide covers everything you need to run Azure Labs, with optional AWS integ
 ## Quick Start
 
 ```powershell
-# Run the unified setup (installs tooling, prompts for login)
-.\scripts\setup.ps1 -DoLogin
+# Run setup from repo root (installs tooling, prompts for logins)
+.\setup.ps1
+
+# Check status anytime
+.\setup.ps1 -Status
+
+# Azure only
+.\setup.ps1 -Azure
+
+# AWS only (for hybrid labs)
+.\setup.ps1 -Aws
 ```
 
 This will:
-1. Install Azure CLI, Bicep, and Az PowerShell module if missing
-2. Prompt for Azure login (browser-based)
-3. Ask if you want to configure AWS (optional)
-4. Copy config templates to `.data/` on first run
+1. Check/install Azure CLI, Bicep, Terraform
+2. Check/install AWS CLI (if needed)
+3. Prompt for Azure login (browser-based)
+4. Prompt for AWS login (SSO or IAM keys)
+5. Show green/yellow status for each component
 
 ## Detailed Setup Guides
 
