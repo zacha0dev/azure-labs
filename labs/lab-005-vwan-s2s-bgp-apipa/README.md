@@ -50,27 +50,43 @@ Prove correct Azure vWAN S2S VPN Gateway dual-instance behavior with determinist
 ## Quick Start
 
 ```powershell
-# Navigate to lab directory
+# 1. First-time setup (if not done already)
+cd azure-labs
+.\scripts\setup.ps1 -DoLogin
+
+# 2. Navigate to lab directory
 cd labs/lab-005-vwan-s2s-bgp-apipa
 
-# Deploy (will prompt for confirmation)
+# 3. Deploy with defaults (centralus region, uses default subscription)
 .\deploy.ps1
 
-# Or deploy with force (skip prompts)
-.\deploy.ps1 -Force
+# Or deploy with specific options
+.\deploy.ps1 -Location eastus2 -Owner "yourname" -Force
 
-# Cleanup when done (important - stops billing!)
-.\destroy.ps1
+# 4. Cleanup when done (important - stops billing!)
+.\destroy.ps1 -Force
 ```
+
+**That's it!** The script uses sensible defaults:
+- Region: `centralus` (override with `-Location`)
+- Subscription: Uses default from `.data/subs.json`
+- All resource names are deterministic (no random suffixes)
 
 ## Parameters
 
+All parameters have sensible defaults - you can run `.\deploy.ps1` with no arguments.
+
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `-SubscriptionKey` | (from config) | Subscription key from `.data/subs.json` |
-| `-Location` | `centralus` | Azure region (must be in allowlist) |
-| `-Owner` | `` | Optional owner tag for resources |
-| `-Force` | `$false` | Skip confirmation prompts |
+| `-SubscriptionKey` | `default` from subs.json | Which subscription to use (run setup.ps1 first) |
+| `-Location` | `centralus` | Azure region. Allowed: centralus, eastus, eastus2, westus2 |
+| `-Owner` | (empty) | Optional owner tag (e.g., `-Owner "yourname"`) |
+| `-Force` | `$false` | Skip cost confirmation prompt |
+
+**Example with all options:**
+```powershell
+.\deploy.ps1 -SubscriptionKey lab -Location eastus2 -Owner "yourname" -Force
+```
 
 ## Deployment Phases
 
@@ -114,28 +130,53 @@ Pattern: `169.254.21.x` = Instance 0, `169.254.22.x` = Instance 1
 
 ## Validation
 
-After deployment completes, verify instance bindings:
+After deployment completes, verify instance bindings with these copy-paste commands:
 
 ```powershell
-# Quick check - all connections provisioned
-az network vpn-gateway connection list -g rg-lab-005-vwan-s2s --gateway-name vpngw-lab-005 --query "[].{Name:name,State:provisioningState}" -o table
+# 1. Quick check - all connections provisioned
+az network vpn-gateway connection list `
+  -g rg-lab-005-vwan-s2s `
+  --gateway-name vpngw-lab-005 `
+  --query "[].{Name:name,State:provisioningState}" -o table
 
-# Detailed - check instance bindings per link
-# See docs/validation.md for full commands
+# Expected output:
+# Name          State
+# ------------  ---------
+# conn-site-1   Succeeded
+# conn-site-2   Succeeded
+# conn-site-3   Succeeded
+# conn-site-4   Succeeded
+
+# 2. Check VPN Gateway has both instances
+az network vpn-gateway show `
+  -g rg-lab-005-vwan-s2s `
+  -n vpngw-lab-005 `
+  --query "bgpSettings.bgpPeeringAddresses[].ipconfigurationId" -o table
+
+# 3. List all VPN sites
+az network vpn-site list -g rg-lab-005-vwan-s2s --query "[].name" -o tsv
 ```
 
-Expected output shows:
-- 4 connections (conn-site-1 through conn-site-4)
-- Each with 2 link connections
-- Odd links bound to Instance 0
-- Even links bound to Instance 1
+**Expected result:**
+- 4 connections (conn-site-1 through conn-site-4) all in "Succeeded" state
+- 2 BGP peering addresses (Instance0 and Instance1)
+- 4 VPN sites (site-1 through site-4)
+
+See [docs/validation.md](docs/validation.md) for detailed instance binding checks.
 
 ## Azure Portal
 
-Monitor deployment progress:
+Monitor deployment progress (the script prints this URL with your subscription ID):
+
+```powershell
+# Get your subscription ID
+az account show --query id -o tsv
+
+# Then open in browser:
+# https://portal.azure.com/#@/resource/subscriptions/YOUR-SUB-ID/resourceGroups/rg-lab-005-vwan-s2s/deployments
 ```
-https://portal.azure.com/#@/resource/subscriptions/<sub-id>/resourceGroups/rg-lab-005-vwan-s2s/deployments
-```
+
+Or just go to: **Portal → Resource Groups → rg-lab-005-vwan-s2s → Deployments**
 
 ## Resources Created
 
