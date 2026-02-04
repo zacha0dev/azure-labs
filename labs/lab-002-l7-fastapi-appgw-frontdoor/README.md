@@ -2,12 +2,12 @@
 
 Deploy a FastAPI application behind Azure Application Gateway and Azure Front Door. Learn Layer 7 load balancing, health probes, and global CDN distribution.
 
-## What This Lab Does
+## Purpose
 
-- Deploys a FastAPI app on an Ubuntu VM (port 8000)
-- Creates Application Gateway (Standard_v2) as regional L7 load balancer
-- Adds Azure Front Door (Standard) for global distribution
-- Configures health probes at `/health` endpoint
+- Deploy a FastAPI app on an Ubuntu VM (port 8000)
+- Create Application Gateway (Standard_v2) as regional L7 load balancer
+- Add Azure Front Door (Standard) for global distribution
+- Configure health probes at `/health` endpoint
 
 ## Architecture
 
@@ -49,51 +49,48 @@ Deploy a FastAPI application behind Azure Application Gateway and Azure Front Do
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Prerequisites
-
-- Run `.\setup.ps1` from repo root
-- Azure subscription
-
 ## Quick Start
 
 ```powershell
-# From repo root
-.\setup.ps1 -Status
-
-# Deploy (takes 10-15 min)
-.\labs\lab-002-l7-fastapi-appgw-frontdoor\deploy.ps1 -AdminPassword "YourPassword123!"
-
-# Add your IP to NSG for SSH access (optional)
-.\labs\lab-002-l7-fastapi-appgw-frontdoor\allow-myip.ps1
-
-# Test the endpoints
-curl http://<front-door-hostname>/health
-curl http://<app-gateway-ip>/
-
-# Cleanup
-.\labs\lab-002-l7-fastapi-appgw-frontdoor\destroy.ps1
+cd labs/lab-002-l7-fastapi-appgw-frontdoor
+./deploy.ps1 -AdminPassword "YourPassword123!"
 ```
 
 ## Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `-Sub` | from config | Subscription ID |
-| `-Location` | centralus | Azure region |
+| `-SubscriptionKey` | (from config) | Subscription key from `.data/subs.json` |
+| `-Location` | `centralus` | Azure region |
 | `-AdminPassword` | *required* | VM admin password |
-| `-VnetCidr` | 10.72.0.0/16 | VNet address space |
+| `-Owner` | (from env) | Owner tag value |
+| `-Force` | (switch) | Skip confirmation prompts |
+
+## Deployment Phases
+
+| Phase | Description | Duration |
+|-------|-------------|----------|
+| 0 | Preflight Checks | ~5s |
+| 1 | Core Fabric (RG + VNet) | ~30s |
+| 2 | FastAPI VM | ~2-3 min |
+| 3 | Application Gateway | ~5-8 min |
+| 4 | Azure Front Door | ~2-3 min |
+| 5 | Validation | ~30s |
+| 6 | Summary | ~5s |
+
+**Total: ~10-15 minutes** (AGW provisioning dominates)
 
 ## Resources Created
 
 | Resource | Name | Notes |
 |----------|------|-------|
-| Resource Group | rg-azure-labs-lab-002 | Contains all resources |
-| VNet | vnet-lab-002 | 10.72.0.0/16 |
-| Application Gateway | agw-lab-002 | Standard_v2, 1 instance |
-| Front Door | afd-lab-002 | Standard SKU |
-| VM | vm-fastapi-002 | Ubuntu 22.04 with FastAPI |
-| Public IP | pip-agw-lab-002 | For App Gateway |
-| NSG | nsg-lab-002-vm | Controls VM access |
+| Resource Group | `rg-lab-002-l7-lb` | Contains all resources |
+| Virtual Network | `vnet-lab-002` | 10.72.0.0/16 |
+| Application Gateway | `agw-lab-002` | Standard_v2, 1 instance |
+| Front Door | `afd-lab-002` | Standard SKU |
+| VM | `vm-fastapi-002` | Ubuntu 22.04 with FastAPI |
+| Public IP | `pip-agw-lab-002` | For App Gateway |
+| NSG | `nsg-lab-002-vm` | Controls VM access |
 
 ## Cost Estimate
 
@@ -103,9 +100,38 @@ curl http://<app-gateway-ip>/
 | Front Door (Standard) | ~$0.03/hour + data |
 | VM (Standard_B1s) | ~$0.01/hour |
 
-**Estimated total:** ~$0.30/hour
+**Estimated total: ~$0.30/hour (~$7.20/day)**
 
 Run `destroy.ps1` when done to avoid ongoing charges.
+
+## Tags Applied
+
+```json
+{
+  "project": "azure-labs",
+  "lab": "lab-002",
+  "owner": "<from config>",
+  "environment": "lab",
+  "cost-center": "learning"
+}
+```
+
+## Validation
+
+Quick validation:
+```powershell
+# Check Application Gateway status
+az network application-gateway show -g rg-lab-002-l7-lb -n agw-lab-002 --query provisioningState -o tsv
+
+# Check Front Door status
+az afd profile show -g rg-lab-002-l7-lb --profile-name afd-lab-002 --query provisioningState -o tsv
+
+# Test endpoints
+afdHost=$(az afd endpoint show -g rg-lab-002-l7-lb --profile-name afd-lab-002 --endpoint-name afd-endpoint-lab-002 --query hostName -o tsv)
+curl http://$afdHost/health
+```
+
+See [docs/validation.md](docs/validation.md) for comprehensive validation commands.
 
 ## Endpoints
 
@@ -132,6 +158,26 @@ def health():
 @app.get("/")
 def root():
     return {"message": "Hello from FastAPI behind App Gateway + Front Door"}
+```
+
+## Cleanup
+
+```powershell
+./destroy.ps1
+```
+
+## Files
+
+```
+lab-002-l7-fastapi-appgw-frontdoor/
+├── deploy.ps1      # Main deployment script (7 phases)
+├── destroy.ps1     # Cleanup script
+├── allow-myip.ps1  # Add your IP to NSG for SSH
+├── README.md       # This file
+├── docs/
+│   └── validation.md
+├── logs/           # Runtime logs
+└── outputs/        # Generated outputs (outputs.json)
 ```
 
 ## Key Learnings

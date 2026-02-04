@@ -1,63 +1,99 @@
-# Lab 000: Resource Group + VNet Basics
+# Lab 000: Resource Group + VNet Baseline
 
-A minimal lab to verify your Azure Labs setup is working. Deploys a resource group and VNet to confirm authentication and subscription configuration.
+A minimal lab to verify your Azure Labs setup is working. Deploys a resource group and VNet with proper tagging following the standard phased deployment model.
 
-## What This Lab Does
+## Purpose
 
-- Creates a resource group with lab tags
-- Deploys a VNet with two subnets
-- Validates Azure CLI authentication and subscription access
-
-## Prerequisites
-
-- Run `.\setup.ps1` from repo root (sets up Azure CLI)
-- Configure `.data/subs.json` with your subscription
+- Verify Azure CLI authentication and subscription configuration
+- Create baseline infrastructure with proper tagging
+- Demonstrate the phased deployment pattern used across all labs
 
 ## Quick Start
 
 ```powershell
-# From repo root
-.\setup.ps1 -Status              # Verify Azure is ready
-
-# Deploy
-.\labs\lab-000_resource-group\deploy.ps1
-
-# Cleanup
-.\labs\lab-000_resource-group\destroy.ps1
+cd labs/lab-000_resource-group
+./deploy.ps1
 ```
 
 ## Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `-Subs` | from config | Subscription ID(s) or key(s) from subs.json |
-| `-Location` | centralus | Azure region |
-| `-RgPrefix` | rg-azure-labs | Resource group name prefix |
-| `-VnetCidr` | 10.50.0.0/16 | VNet address space |
+| `-SubscriptionKey` | (from config) | Subscription key from `.data/subs.json` |
+| `-Location` | `centralus` | Azure region |
+| `-Owner` | (from env) | Owner tag value |
+| `-Force` | (switch) | Skip confirmation prompts |
+
+## Deployment Phases
+
+| Phase | Description | Duration |
+|-------|-------------|----------|
+| 0 | Preflight Checks | ~5s |
+| 1 | Core Fabric (RG + VNet) | ~10s |
+| 2-4 | N/A (baseline lab) | ~0s |
+| 5 | Validation | ~5s |
+| 6 | Summary | ~1s |
+
+**Total: ~20 seconds**
 
 ## Resources Created
 
 | Resource | Name | Notes |
 |----------|------|-------|
-| Resource Group | rg-azure-labs-{sub} | Tagged with project, lab, owner |
-| VNet | vnet-azure-labs-{sub} | 10.50.0.0/16 |
-| Subnet | snet-01 | 10.50.1.0/24 |
-| Subnet | snet-02 | 10.50.2.0/24 |
+| Resource Group | `rg-lab-000-baseline` | Tagged with standard labels |
+| VNet | `vnet-lab-000` | 10.50.0.0/16 |
+| Subnet | `snet-workload` | 10.50.1.0/24 |
+| Subnet | `snet-management` | 10.50.2.0/24 |
 
 ## Cost Estimate
 
-**Minimal** - Resource groups and VNets are free. No compute resources.
+**FREE** - Resource groups and VNets have no cost.
 
-## Configuration
-
-Optional: Create `lab.config.json` in this folder to override defaults:
+## Tags Applied
 
 ```json
 {
-  "location": "eastus2",
-  "rgPrefix": "rg-myproject",
-  "vnetCidr": "10.100.0.0/16"
+  "project": "azure-labs",
+  "lab": "lab-000",
+  "owner": "<from config>",
+  "environment": "lab",
+  "cost-center": "learning"
 }
+```
+
+## Validation
+
+Quick validation:
+```powershell
+# Check resource group
+az group show -n rg-lab-000-baseline -o table
+
+# Check VNet
+az network vnet show -g rg-lab-000-baseline -n vnet-lab-000 -o table
+
+# Check subnets
+az network vnet subnet list -g rg-lab-000-baseline --vnet-name vnet-lab-000 -o table
+```
+
+See [docs/validation.md](docs/validation.md) for comprehensive validation commands.
+
+## Cleanup
+
+```powershell
+./destroy.ps1
+```
+
+## Files
+
+```
+lab-000_resource-group/
+├── deploy.ps1      # Main deployment script
+├── destroy.ps1     # Cleanup script
+├── README.md       # This file
+├── docs/
+│   └── validation.md
+├── logs/           # Runtime logs
+└── outputs/        # (unused, outputs in .data/)
 ```
 
 ## Troubleshooting
@@ -69,9 +105,12 @@ az login
 
 **Wrong subscription:**
 ```powershell
-# Check current subscription
-az account show
-
-# Set specific subscription
+az account show  # Check current
 az account set --subscription "your-subscription-id"
+```
+
+**Config not found:**
+```powershell
+# Run setup from repo root
+.\scripts\setup.ps1 -DoLogin
 ```

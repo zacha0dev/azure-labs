@@ -1,73 +1,134 @@
 # labs/lab-000_resource-group/destroy.ps1
+# Destroys all resources created by lab-000
+
+[CmdletBinding()]
 param(
-  [string[]]$Subs,
-  [string]$RgPrefix = "rg-azure-labs"
+  [string]$SubscriptionKey,
+  [switch]$Force,
+  [switch]$KeepLogs
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Require-Command($name) {
-  if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
-    throw "Missing required command: $name"
-  }
+$LabRoot = $PSScriptRoot
+$RepoRoot = Resolve-Path (Join-Path $LabRoot "..\..") | Select-Object -ExpandProperty Path
+
+# Load shared helpers
+. (Join-Path $RepoRoot "scripts\labs-common.ps1")
+
+# Lab configuration
+$ResourceGroup = "rg-lab-000-baseline"
+
+function Get-ElapsedTime {
+  param([datetime]$StartTime)
+  $elapsed = (Get-Date) - $StartTime
+  return "$([math]::Floor($elapsed.TotalMinutes))m $($elapsed.Seconds)s"
 }
-
-function RepoRoot-FromHere {
-  return (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-}
-
-function Load-SubsConfig($repoRoot) {
-  $path = Join-Path $repoRoot ".data\subs.json"
-  if (Test-Path $path) {
-    return (Get-Content $path -Raw | ConvertFrom-Json)
-  }
-  return $null
-}
-
-function Get-TargetSubs($cfg, [string[]]$subsArg) {
-  if ($subsArg -and $subsArg.Count -gt 0) { return $subsArg }
-  if ($cfg -and $cfg.default) { return @($cfg.default) }
-  $id = (az account show --query id -o tsv 2>$null)
-  if (-not $id) { throw "Not logged in. Run: az login" }
-  return @($id)
-}
-
-function Normalize-SubId($cfg, [string]$token) {
-  if ($token -match '^[0-9a-fA-F-]{36}$') { return $token }
-  if ($cfg -and $cfg.subscriptions -and $cfg.subscriptions.$token -and $cfg.subscriptions.$token.id) {
-    return $cfg.subscriptions.$token.id
-  }
-  return $token
-}
-
-Require-Command az
-
-$repoRoot = RepoRoot-FromHere
-$cfg = Load-SubsConfig $repoRoot
-$targets = Get-TargetSubs $cfg $Subs
 
 Write-Host ""
-Write-Host "Lab-000 Destroy (delete RG)" -ForegroundColor Cyan
+Write-Host "Lab 000: Destroy Resources" -ForegroundColor Cyan
+Write-Host "===========================" -ForegroundColor Cyan
 Write-Host ""
 
-foreach ($t in $targets) {
-  $subId = Normalize-SubId $cfg $t
-  Write-Host "==> Target subscription: $t -> $subId" -ForegroundColor Yellow
-  az account set --subscription $subId | Out-Null
+$destroyStartTime = Get-Date
 
-  $subShort =
-    if ($t -match '^sub\d+$') { $t }
-    elseif ($subId -match '^[0-9a-fA-F-]{8}') { $subId.Substring(0,8) }
-    else { "sub" }
+# Get subscription
+$SubscriptionId = Get-SubscriptionId -Key $SubscriptionKey -RepoRoot $RepoRoot
+Ensure-AzureAuth -DoLogin
+az account set --subscription $SubscriptionId | Out-Null
 
-  $rgName = "$RgPrefix-$subShort"
+# Check if resource group exists
+$oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
+$existingRg = az group show -n $ResourceGroup -o json 2>$null | ConvertFrom-Json
+$ErrorActionPreference = $oldErrPref
 
-  Write-Host "    Deleting RG: $rgName"
-  az group delete --name $rgName --yes --no-wait | Out-Null
+if (-not $existingRg) {
+  Write-Host "Resource group '$ResourceGroup' does not exist. Nothing to delete." -ForegroundColor Yellow
+  exit 0
+}
 
-  Write-Host "    [OK] Delete started (no-wait)" -ForegroundColor Green
+# Show what will be deleted
+Write-Host "Resources to delete:" -ForegroundColor Yellow
+Write-Host "  Resource Group: $ResourceGroup" -ForegroundColor Gray
+Write-Host "  Subscription: $SubscriptionId" -ForegroundColor Gray
+Write-Host ""
+
+# List resources in the group
+$resources = az resource list -g $ResourceGroup --query "[].{Name:name, Type:type}" -o json 2>$null | ConvertFrom-Json
+if ($resources) {
+  Write-Host "Resources in group:" -ForegroundColor White
+  foreach ($r in $resources) {
+    Write-Host "  - $($r.Name) ($($r.Type))" -ForegroundColor DarkGray
+  }
   Write-Host ""
 }
 
-Write-Host "Done." -ForegroundColor Cyan
+# Confirmation
+if (-not $Force) {
+  Write-Host "WARNING: This will permanently delete all resources!" -ForegroundColor Red
+  $confirm = Read-Host "Type DELETE to confirm"
+  if ($confirm -ne "DELETE") {
+    Write-Host "Cancelled." -ForegroundColor Yellow
+    exit 0
+  }
+}
+
+# Delete resource group
+Write-Host ""
+Write-Host "Deleting resource group: $ResourceGroup" -ForegroundColor Yellow
+
+$deleteStartTime = Get-Date
+
+az group delete --name $ResourceGroup --yes --no-wait
+
+# Wait for deletion
+Write-Host "Waiting for deletion to complete..." -ForegroundColor Gray
+$maxAttempts = 30
+$attempt = 0
+
+while ($attempt -lt $maxAttempts) {
+  $attempt++
+  $rgExists = az group exists -n $ResourceGroup 2>$null
+  if ($rgExists -eq "false") {
+    break
+  }
+
+  $elapsed = Get-ElapsedTime -StartTime $deleteStartTime
+  Write-Host "  [$elapsed] Still deleting... (attempt $attempt/$maxAttempts)" -ForegroundColor DarkGray
+  Start-Sleep -Seconds 10
+}
+
+$deleteElapsed = Get-ElapsedTime -StartTime $deleteStartTime
+
+# Clean up local data
+Write-Host ""
+Write-Host "Cleaning up local data..." -ForegroundColor Gray
+
+$dataDir = Join-Path $RepoRoot ".data\lab-000"
+if (Test-Path $dataDir) {
+  Remove-Item -Path $dataDir -Recurse -Force
+  Write-Host "  Removed: $dataDir" -ForegroundColor DarkGray
+}
+
+# Optionally clean up logs
+if (-not $KeepLogs) {
+  $logsDir = Join-Path $LabRoot "logs"
+  if (Test-Path $logsDir) {
+    $logFiles = Get-ChildItem -Path $logsDir -Filter "lab-000-*.log" -ErrorAction SilentlyContinue
+    if ($logFiles.Count -gt 0) {
+      Write-Host "  Removing $($logFiles.Count) log file(s)..." -ForegroundColor DarkGray
+      $logFiles | Remove-Item -Force
+    }
+  }
+}
+
+$totalElapsed = Get-ElapsedTime -StartTime $destroyStartTime
+
+Write-Host ""
+Write-Host ("=" * 60) -ForegroundColor Green
+Write-Host "Cleanup complete!" -ForegroundColor Green
+Write-Host ("=" * 60) -ForegroundColor Green
+Write-Host ""
+Write-Host "Total cleanup time: $totalElapsed" -ForegroundColor Gray
+Write-Host ""
