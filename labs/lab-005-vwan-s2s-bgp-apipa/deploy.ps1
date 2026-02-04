@@ -621,11 +621,10 @@ foreach ($site in $VpnSites) {
     $linkIndex++
   }
 
-  # Create connection via ARM REST API
+  # Create connection via ARM REST API (enableBgp only at link level, not connection level)
   $connBody = @{
     properties = @{
       remoteVpnSite = @{ id = $siteId }
-      enableBgp = $true
       vpnLinkConnections = $linkConnections
     }
   } | ConvertTo-Json -Depth 15
