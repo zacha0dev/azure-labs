@@ -85,6 +85,20 @@ function Require-Command($name, $installHint) {
   }
 }
 
+function Invoke-AzCommand {
+  # Safely run az CLI commands, suppressing stderr errors that PowerShell treats as exceptions
+  param([string]$Command)
+  $oldErrPref = $ErrorActionPreference
+  $ErrorActionPreference = "SilentlyContinue"
+  try {
+    $result = Invoke-Expression "az $Command 2>`$null"
+    $script:LastAzExitCode = $LASTEXITCODE
+    return $result
+  } finally {
+    $ErrorActionPreference = $oldErrPref
+  }
+}
+
 function Ensure-Directory([string]$Path) {
   if (-not (Test-Path $Path)) {
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
@@ -204,7 +218,10 @@ az account set --subscription $SubscriptionId | Out-Null
 Write-Validation -Check "Azure authenticated" -Passed $true
 
 # Check for existing resource group
+$oldErrPref = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
 $existingRg = az group show -n $ResourceGroup -o json 2>$null | ConvertFrom-Json
+$ErrorActionPreference = $oldErrPref
 if ($existingRg) {
   Write-Host ""
   Write-Host "Resource group '$ResourceGroup' already exists." -ForegroundColor Yellow
@@ -252,7 +269,9 @@ Write-Log "Resource group created: $ResourceGroup"
 
 # Create vWAN
 Write-Host "Creating Virtual WAN: $VwanName" -ForegroundColor Gray
+$oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
 $existingVwan = az network vwan show -g $ResourceGroup -n $VwanName -o json 2>$null | ConvertFrom-Json
+$ErrorActionPreference = $oldErrPref
 if (-not $existingVwan) {
   az network vwan create `
     --name $VwanName `
@@ -268,7 +287,9 @@ if (-not $existingVwan) {
 
 # Create vHub
 Write-Host "Creating Virtual Hub: $VhubName (this takes 5-10 minutes)" -ForegroundColor Gray
+$oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
 $existingVhub = az network vhub show -g $ResourceGroup -n $VhubName -o json 2>$null | ConvertFrom-Json
+$ErrorActionPreference = $oldErrPref
 if (-not $existingVhub) {
   az network vhub create `
     --name $VhubName `
@@ -323,7 +344,9 @@ Write-Phase -Number 2 -Title "S2S VPN Gateway (20-30 minutes)"
 $phase2Start = Get-Date
 
 # Check existing gateway state
+$oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
 $existingGw = az network vpn-gateway show -g $ResourceGroup -n $VpnGwName -o json 2>$null | ConvertFrom-Json
+$ErrorActionPreference = $oldErrPref
 if ($existingGw) {
   if ($existingGw.provisioningState -eq "Succeeded") {
     Write-Host "VPN Gateway already exists and is healthy - skipping creation" -ForegroundColor Green
@@ -439,7 +462,9 @@ foreach ($site in $VpnSites) {
   Write-Host "Creating VPN Site: $siteName (ASN: $($site.Asn))" -ForegroundColor Gray
 
   # Check if site exists
+  $oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
   $existingSite = az network vpn-site show -g $ResourceGroup -n $siteName -o json 2>$null | ConvertFrom-Json
+  $ErrorActionPreference = $oldErrPref
   if ($existingSite -and $existingSite.vpnSiteLinks.Count -ge 2) {
     Write-Host "  Site already exists with valid links, skipping..." -ForegroundColor DarkGray
     continue
@@ -518,12 +543,14 @@ $psks | ConvertTo-Json | Set-Content -Path $pskPath -Encoding UTF8
 Write-Host ""
 Write-Host "Phase 3 Validation:" -ForegroundColor Yellow
 $allSitesValid = $true
+$oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
 foreach ($site in $VpnSites) {
   $siteObj = az network vpn-site show -g $ResourceGroup -n $site.Name -o json 2>$null | ConvertFrom-Json
   $linksOk = ($siteObj -and $siteObj.vpnSiteLinks.Count -eq 2)
   Write-Validation -Check "Site $($site.Name) has 2 links" -Passed $linksOk
   if (-not $linksOk) { $allSitesValid = $false }
 }
+$ErrorActionPreference = $oldErrPref
 
 $phase3Elapsed = Get-ElapsedTime -StartTime $phase3Start
 Write-Log "Phase 3 completed in $phase3Elapsed" "SUCCESS"
@@ -545,7 +572,9 @@ foreach ($site in $VpnSites) {
   Write-Host "Creating connection: $connName" -ForegroundColor Gray
 
   # Check if connection exists
+  $oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
   $existingConn = az network vpn-gateway connection show -g $ResourceGroup --gateway-name $VpnGwName -n $connName -o json 2>$null | ConvertFrom-Json
+  $ErrorActionPreference = $oldErrPref
   if ($existingConn -and $existingConn.provisioningState -eq "Succeeded") {
     Write-Host "  Connection already exists, skipping..." -ForegroundColor DarkGray
     continue
@@ -619,6 +648,7 @@ Start-Sleep -Seconds 60
 Write-Host ""
 Write-Host "Phase 4 Validation:" -ForegroundColor Yellow
 $allConnectionsValid = $true
+$oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
 
 foreach ($site in $VpnSites) {
   $connName = "conn-$($site.Name)"
@@ -647,6 +677,7 @@ foreach ($site in $VpnSites) {
     }
   }
 }
+$ErrorActionPreference = $oldErrPref
 
 $phase4Elapsed = Get-ElapsedTime -StartTime $phase4Start
 Write-Log "Phase 4 completed in $phase4Elapsed" "SUCCESS"
@@ -659,7 +690,9 @@ Write-Phase -Number 5 -Title "Final Validation"
 $phase5Start = Get-Date
 
 # Get final gateway state with all connections
-$gw = az network vpn-gateway show -g $ResourceGroup -n $VpnGwName -o json | ConvertFrom-Json
+$oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
+$gw = az network vpn-gateway show -g $ResourceGroup -n $VpnGwName -o json 2>$null | ConvertFrom-Json
+$ErrorActionPreference = $oldErrPref
 
 Write-Host "Instance 0 BGP Peers:" -ForegroundColor Yellow
 $instance0Peers = @()
