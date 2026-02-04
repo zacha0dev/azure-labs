@@ -75,9 +75,13 @@ function Test-AzureCli {
 
 function Test-AzureAuth {
   if (-not (HasCmd "az")) { return @{ ok = $false; user = $null; sub = $null } }
-  az account get-access-token --query "expiresOn" -o tsv 2>&1 | Out-Null
-  if ($LASTEXITCODE -ne 0) { return @{ ok = $false; user = $null; sub = $null } }
   try {
+    $oldPreference = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    az account get-access-token --query "expiresOn" -o tsv 2>$null | Out-Null
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $oldPreference
+    if ($exitCode -ne 0) { return @{ ok = $false; user = $null; sub = $null } }
     $acct = az account show -o json 2>$null | ConvertFrom-Json
     return @{ ok = $true; user = $acct.user.name; sub = $acct.name }
   } catch {
@@ -113,15 +117,26 @@ function Test-Terraform {
 # --- AWS Checks ---
 function Test-AwsCli {
   if (-not (HasCmd "aws")) { return @{ ok = $false; version = $null } }
-  $ver = (aws --version 2>&1) -replace "aws-cli/([^\s]+).*", '$1'
-  return @{ ok = $true; version = $ver }
+  try {
+    $oldPreference = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    $ver = (aws --version 2>&1) -replace "aws-cli/([^\s]+).*", '$1'
+    $ErrorActionPreference = $oldPreference
+    return @{ ok = $true; version = $ver }
+  } catch {
+    return @{ ok = $true; version = "installed" }
+  }
 }
 
 function Test-AwsAuth([string]$Profile) {
   if (-not (HasCmd "aws")) { return @{ ok = $false; account = $null } }
-  $result = aws sts get-caller-identity --profile $Profile --output json 2>$null
-  if ($LASTEXITCODE -ne 0) { return @{ ok = $false; account = $null } }
   try {
+    $oldPreference = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    $result = aws sts get-caller-identity --profile $Profile --output json 2>$null
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $oldPreference
+    if ($exitCode -ne 0) { return @{ ok = $false; account = $null } }
     $id = $result | ConvertFrom-Json
     return @{ ok = $true; account = $id.Account; arn = $id.Arn }
   } catch {
