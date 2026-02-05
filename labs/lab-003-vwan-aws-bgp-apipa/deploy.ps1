@@ -1309,24 +1309,18 @@ if ($tunnel1OutsideIp -eq "pending" -or $tunnel2OutsideIp -eq "pending" -or
   $tunnel4OutsideIp = $vpn2Conn.VgwTelemetry[1].OutsideIpAddress
 }
 
-# Now create VPN Sites with real AWS tunnel IPs
+# Now create/update VPN Sites with real AWS tunnel IPs
 foreach ($site in $VpnSites) {
   $siteName = $site.Name
   Write-Host "Creating VPN Site: $siteName (ASN: $AwsBgpAsn)" -ForegroundColor Gray
 
-  # Check if site exists
+  # Check if site exists - we'll update it (idempotent like Terraform)
   $oldErrPref = $ErrorActionPreference; $ErrorActionPreference = "SilentlyContinue"
   $existingSite = az network vpn-site show -g $ResourceGroup -n $siteName -o json 2>$null | ConvertFrom-Json
   $ErrorActionPreference = $oldErrPref
-  if ($existingSite -and $existingSite.vpnSiteLinks.Count -ge 2) {
-    Write-Host "  Site already exists with valid links, skipping..." -ForegroundColor DarkGray
-    continue
-  }
 
-  # Delete incomplete site if exists
   if ($existingSite) {
-    az network vpn-site delete -g $ResourceGroup -n $siteName --yes 2>$null
-    Start-Sleep -Seconds 3
+    Write-Host "  Updating existing site..." -ForegroundColor DarkGray
   }
 
   # Build site links array

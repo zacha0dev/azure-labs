@@ -94,7 +94,7 @@ Use `-AlternateApipa` to test behavior differences between these configurations:
 ./deploy.ps1 -AwsProfile aws-labs -AlternateApipa
 ```
 
-**Note:** You must run `./destroy.ps1` before switching between configurations.
+**Idempotent Updates:** Azure resources (gateway APIPA, sites, connections) update in place like Terraform. However, AWS VPN connections have their tunnel APIPA ranges set at creation and cannot be modified. To switch between Standard and Alternate modes, delete the AWS VPN connections first or run a full `./destroy.ps1`.
 
 ## Deployment Phases
 
