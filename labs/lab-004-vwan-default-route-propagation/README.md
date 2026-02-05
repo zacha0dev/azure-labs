@@ -139,6 +139,8 @@ az network nic show-effective-route-table -g rg-lab-004-vwan-route-prop -n nic-v
 
 See [docs/validation.md](docs/validation.md) for comprehensive validation commands.
 
+**Operational Observability:** See [docs/observability.md](docs/observability.md) for health gates, troubleshooting patterns, and what NOT to look at.
+
 ## Cleanup
 
 ```powershell

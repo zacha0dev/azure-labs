@@ -77,6 +77,8 @@ az network vnet subnet list -g rg-lab-000-baseline --vnet-name vnet-lab-000 -o t
 
 See [docs/validation.md](docs/validation.md) for comprehensive validation commands.
 
+**Operational Observability:** See [docs/observability.md](docs/observability.md) for health gates, troubleshooting patterns, and what NOT to look at.
+
 ## Cleanup
 
 ```powershell

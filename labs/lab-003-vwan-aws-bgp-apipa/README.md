@@ -148,6 +148,8 @@ aws ec2 describe-vpn-connections --filters "Name=tag:lab,Values=lab-003" --query
 
 See [docs/validation.md](docs/validation.md) for comprehensive validation commands.
 
+**Operational Observability:** See [docs/observability.md](docs/observability.md) for health gates, troubleshooting patterns, and what NOT to look at.
+
 ## Files
 
 ```
