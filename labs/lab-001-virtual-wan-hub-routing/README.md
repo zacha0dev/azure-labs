@@ -117,6 +117,8 @@ az network vhub get-effective-routes -g rg-lab-001-vwan-routing -n vhub-lab-001 
 
 See [docs/validation.md](docs/validation.md) for comprehensive validation commands.
 
+**Operational Observability:** See [docs/observability.md](docs/observability.md) for health gates, troubleshooting patterns, and what NOT to look at.
+
 ## Cleanup
 
 ```powershell

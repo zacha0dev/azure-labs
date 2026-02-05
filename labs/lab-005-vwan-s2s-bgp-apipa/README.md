@@ -164,6 +164,8 @@ az network vpn-site list -g rg-lab-005-vwan-s2s --query "[].name" -o tsv
 
 See [docs/validation.md](docs/validation.md) for detailed instance binding checks.
 
+**Operational Observability:** See [docs/observability.md](docs/observability.md) for health gates, troubleshooting patterns, and what NOT to look at.
+
 ## Azure Portal
 
 Monitor deployment progress (the script prints this URL with your subscription ID):

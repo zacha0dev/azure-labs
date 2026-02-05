@@ -192,6 +192,19 @@ Each lab includes:
 - `scripts/validate.ps1` - Verify connectivity and configuration
 - `scripts/destroy.ps1` - Clean up resources (supports `-WhatIf`)
 
+## Operations & Observability
+
+Each lab includes an observability guide with health gates, troubleshooting patterns, and what NOT to look at. See [docs/observability-index.md](docs/observability-index.md) for the full guide.
+
+| Lab | Observability Guide | Golden Rule |
+|-----|---------------------|-------------|
+| [lab-000](labs/lab-000_resource-group/) | [observability.md](labs/lab-000_resource-group/docs/observability.md) | RG exists + `Succeeded` state |
+| [lab-001](labs/lab-001-virtual-wan-hub-routing/) | [observability.md](labs/lab-001-virtual-wan-hub-routing/docs/observability.md) | vHub `Succeeded` + connection `Connected` |
+| [lab-002](labs/lab-002-l7-fastapi-appgw-frontdoor/) | [observability.md](labs/lab-002-l7-fastapi-appgw-frontdoor/docs/observability.md) | `/health` returns `{"ok":true}` via Front Door |
+| [lab-003](labs/lab-003-vwan-aws-bgp-apipa/) | [observability.md](labs/lab-003-vwan-aws-bgp-apipa/docs/observability.md) | AWS tunnels `UP` + BGP routes > 0 |
+| [lab-004](labs/lab-004-vwan-default-route-propagation/) | [observability.md](labs/lab-004-vwan-default-route-propagation/docs/observability.md) | A1/A2 have 0/0; A3/A4/B1/B2 do NOT |
+| [lab-005](labs/lab-005-vwan-s2s-bgp-apipa/) | [observability.md](labs/lab-005-vwan-s2s-bgp-apipa/docs/observability.md) | All connections `Succeeded` + APIPA matches |
+
 ## Tools
 
 Utility scripts for managing lab resources. See [tools/README.md](tools/README.md) for details.
