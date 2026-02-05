@@ -1,13 +1,24 @@
-# Azure Labs
+# Zallen Cloud Labs
 
-Hands-on Azure networking labs with repeatable deploy/validate/destroy workflows. Includes vWAN, routing, VPN, and one optional Azure↔AWS hybrid lab.
+Hands-on cloud networking, hybrid connectivity, and observability labs.
+
+## About This Project
+
+A personal collection of labs focused on how real cloud systems behave in production. These aren't deployment tutorials—they're designed to build architecture intuition, practice troubleshooting, and understand what happens when things break.
+
+Each lab emphasizes:
+- **Observability first** - Health gates, validation commands, what to check and what to ignore
+- **Production patterns** - Real routing behaviors, BGP mechanics, gateway failover
+- **Safe experimentation** - Repeatable deploy/destroy cycles with cost awareness
+
+> **Disclaimer:** This is an independent, personal project. Not affiliated with Microsoft, Amazon, or any cloud provider.
 
 ## Quick Start
 
 ```powershell
 # Clone
-git clone https://github.com/zacha0dev/azure-labs.git
-cd azure-labs
+git clone https://github.com/zacha0dev/zallen-cloud-labs.git
+cd zallen-cloud-labs
 
 # Setup
 .\setup.ps1 -Status        # Check environment
